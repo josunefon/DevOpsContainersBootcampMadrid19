@@ -1,52 +1,53 @@
 ## Introduction
-El contexto de este apartado sería, tenemos ya una aplicación .net core que funciona tanto en local como en Azure y queremos containerizarla. Para ello:
+
+The context of this section would be, we already have a .net core application that works both locally and in Azure and we want to containerize it. For it:
 
 ## Steps to follow
 
-1. El primer paso a realizar es crearnos un fichero sin extensión que tenga como nombre Dockerfile. Este fichero debe situarse en la raíz de nuestro proyecto.
+1. The first step to perform is to create a file without an extension that has the name Dockerfile. This file must be at the root of our project.
    
-2. El primer bloque de nuestro fichero constará de las siguientes líneas:
+2. The first block of our file will consist of the following lines:
    
 		FROM mcr.microsoft.com/dotnet/core/aspnet:2.2-nanoserver-1809 AS base
 		WORKDIR /app
 		EXPOSE 80
 
-En la primera línea estamos indicando que nuestra aplicación va a correr sobre una base que es dotnet core 2.2. Para poder funcionar necesitamos que Docker se descargue una imagen donde ya exista este SDK. Como no hsmoe especificado el origen de esta imagen, por defecto hará el pull del Docker Registry público.
+In the first line we are indicating that our application will run on a basis that is dotnet core 2.2. In order to work we need Docker to download an image where this SDK already exists. Since the origin of this image has not been specified, by default it will pull it from the public Docker Registry.
 
-En la segunda línea le indicamos que, dentro del contenedor, el directorio donde vamos a trabajar es el /app.
+In the second line we indicate that, within the container, the directory where we are going to work is the / app.
 
-Por último, con el tag EXPOSE, indicamos que el puerto que debe exponer la aplicación dentro del contenedor es el 80. 
+Finally, with the EXPOSE tag, we indicate that the port that the application must expose inside the container is 80. 
 
 	
-3. Una vez que tenemos una primera versión de nuestro Dockerfile, es importante generar imágenes de manera progresiva y versionada. Esto nos permitirá ver cómo la imagen va variando a medida que vamos introduciendo más comandos. El comando que debemos utilizar para generar la imagen es el siguiente:
+3. Once we have a first version of our Dockerfile, it is important to generate images in a progressive and versioned way. This will allow us to see how the image varies as we enter more commands. The command that we must use to generate the image is the following:
 
 ![containers1](./img/containers1.png)	
 	
 		docker build -t myimage:initial -f Dockerfile .
 
-La syntaxis de este comando indica que vamos a construir una imagen que se va a llamar myimage, con una tag que vamos a llamar initial y que debe construirse a partir del Dockerfile que se encuentra en la raíz.
+The syntax of this command indicates that we are going to build an image that is going to be called myimage, with a tag that we are going to call initial and that must be constructed from the Dockerfile that is in the root.
 
 ![containers2](./img/containers2.png)	
 	
-Si nos fijamos veremos que lo ha creado con el tag initial porque, cuando hemos metido el comando. Todo debería tener control de versiones a través del tag. Por defecto, si no se dice nada el tag es **latest**.
+Everything should have version control through the tag. By default, if nothing is said, the tag is **latest**.
 	
-4. Comprobamos que efectivamente tenemos esa imagen con el comando:
+4. We check that we actually have that image with the command:
    
 		docker images
 
 ![containers3](./img/containers3.png)	
 
-Ahora mismo tenemos esa imagen creada en local. Es decir, sólo nosotros la podemos desplegar.
+Right now we have that image created locally. That is, only we can deploy it.
 
-5. Lo que podemos ver es que tenemos dos imágenes creadas, una es la imagen de base con dotnet 2.2 y la otra es la que nos ha creado a partir del hub. En caso de que la única línea que hubiesemos puesto en el fichero hubiese sido la primera, indicando cuál es la imagen base, el id de las imágenes sería el mismo porque serían dos copias exactas. Como hemos cambiado algunos parámetros como el puerto en el que expondremos esta imagen y el directorio donde vamos a trabajar, el id cambia porque la imagen es ligeramente distinta. 
-	
-Si hacemos un **docker image inspect myimage:initial** podemos ver los datos de la imagen que acabamos de generar con las capas. 
+What we can see is that we have two images created, one is the base image with dotnet 2.2 and the other is the one that created us from the hub. If the only line we had put in the file would have been the first, indicating which is the base image, the id of the images would be the same because they would be two exact copies. As we have changed some parameters such as the port where we will expose this image and the directory where we are going to work, the id changes because the image is slightly different.
+
+5. If we type **docker image inspect myimage:initial** we can see the different layers generated withing the image. 
 	
 ![containers4](./img/containers4.png)		
 
-En este caso tenemos ocho layers que definen los cambios que se han configurado en nuestra imagen.
+In this case we have eight layers that define the changes that have been configured in our image.
 	
-6. Añadimos más configuraciones al docker file. El siguiente grupo define que tiene que utilizar el sdk que ya va incluido en la imagen que se ha descargado anteriormente, que tiene que copiar el fichero de proyecto al directorio de trabajo del contenedor /src y le pide que corra un restore y un build de la aplicación.
+6. We add more settings to the docker file. The following group defines that you have to use the sdk that is already included in the image that has been previously downloaded, that you have to copy the project file to the working directory of the / src container and ask you to run a restore and a build of the application.
 	
 		FROM mcr.microsoft.com/dotnet/core/sdk:2.2-nanoserver-1809 AS build
 		WORKDIR /src
@@ -56,24 +57,24 @@ En este caso tenemos ocho layers que definen los cambios que se han configurado 
 		WORKDIR "/src/."
 		RUN dotnet build "DotNetCoreSqlDb.csproj" -c Release -o /app
 		
-Volvemos a crear la imagen pero con un tag nuevo, en este caso será build.
+We recreate the image but with a new tag, in this case it will be **build**.
 
 ![containers5](./img/containers5.png)	
 
-Comprobamos ahora las layers.
+Lets check the layers.
 
 ![containers6](./img/containers6.png)		
 	
-Estas nuevas layers que se han formado representan los cambios que hemos aplicado a la imagen del contenedor.
+These new layers that have been created represent the changes we have applied to the image of the container.
 	
-7. El siguiente bloque es que el hace el publish de nuestra aplicación. Para ello toma como base la imagen que ha nombrado build en el bloque anterior y guarda esta nueva modificación como publish.
+7. The next block is the one that publishes our application. This is based on the image named build in the previous block and saves this new modification as publish.
 	
 		FROM build AS publish
 		RUN dotnet publish "DotNetCoreSqlDb.csproj" -c Release -o /app
 
 ![containers7](./img/containers7.png)			
 				
-8. El último bloque copia todo lo que se ha publicado en el directorio /app del contenedor y expone ese contenido como un ejecutable utilizando para ello un ENTRYPOINT. Mientras ese entrypoint este activo podremos ejecutar la aplicación dentro del contenedor. En el momento en el que lo paremos la aplicación deja de estar disponible. 
+8. The last block copies everything that has been published in the container / app directory and exposes that content as an executable using an ENTRYPOINT. While that entrypoint is active we can execute the application inside the container. At the moment we stop it, the application is no longer available.
 	
 		FROM base AS final
 		WORKDIR /app
@@ -82,11 +83,11 @@ Estas nuevas layers que se han formado representan los cambios que hemos aplicad
 		
 ![containers8](./img/containers8.png)			
 
-9. Veamos todas las imágenes versionadas que hemos ido generando.
+9. Let's see all the versioned images that we have been generating.
 	
 ![containers9](./img/containers9.png)		
 		
-10. Ejecutamos el contenedor.
+10. We run the container using the following command.
 	
 	Docker run --name myapp -p 82:80 -d myimage:final
 
@@ -94,11 +95,11 @@ Estas nuevas layers que se han formado representan los cambios que hemos aplicad
 
 ![containers11](./img/containers11.png)		
 
-En el comando anterior lo que podemos ver es que, utilizando el tag -p indicamos un cambio de puertos. En concreto lo que se indica es que queremos publicar en el puerto 82 lo que el contenedor está publicando en el puerto 80. Esta funcionalidad es muy útil si tenemos varias aplicaciones que se publican por defecto en el puerto 80 y las queremos correr a la vez.	
+In the previous command what we can see is that, using the -p tag we indicate a change of ports. Specifically, what is indicated is that we want to publish on port 82 what the container is publishing on port 80. This functionality is very useful if we have several applications that are published by default on port 80 and we want to run them at the same time .	
 
-11.  Por defecto, tal y como tenemos el proyecto descargado de git, el código va a almacenar los datos en la base datos que tiene en local. Sin embargo, si queremos que esta aplicación sea persistente y utilizar así una base de datos que tenemos creada en nuestra cuenta de Azure, podemos hacer los siguientes cambios en el proyecto.
+11.  By default, as we have the project downloaded from git, the code will store the data in the database that you have locally. However, if we want this application to be persistent and thus use a database that we have created in our Azure account, we can make the following changes in the project.
 
-En el Starup.cs
+At the Starup.cs file:
 
             if (Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") == "Production")
                 services.AddDbContext<MyDatabaseContext>(options =>
@@ -107,13 +108,13 @@ En el Starup.cs
                 services.AddDbContext<MyDatabaseContext>(options =>
                         options.UseSqlite("Data Source=localdatabase.db"));
 
-En el appsettings.json
+At the appsettings.json file:
 	
 	"ConnectionStrings": {
 	    "MyDbConnection": "Server=tcp:masanzdesqlsrvdev01.database.windows.net,1433;Initial Catalog=coreDB;Persist Security Info=False;User ID=bootcampdev;Password=Microsoft$20;MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;"
 	  }
 
-Tendríamos que comentar y descomentar este código en función de lo que queramos que muestre y así podríamos ver los datos que tenemos guardados en local/nube.
+We would have to comment and uncomment this code based on what we want it to show and so we could see the data we have stored locally or in the cloud.
 
 
 
