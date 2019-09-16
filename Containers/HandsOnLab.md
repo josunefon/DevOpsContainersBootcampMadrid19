@@ -116,6 +116,42 @@ At the appsettings.json file:
 
 We would have to comment and uncomment this code based on what we want it to show and so we could see the data we have stored locally or in the cloud.
 
+12. Now, we have tested our dockerized app locally. However, it may be that we want to store our image in a public/private repository so that it could be run by other people. Let's see how we could integrate this with an Azure container registry. Basically, what we want to do is publish our image in an ACR in Azure.
+
+First of all we need to create the ACR. For that, please run the following command in azure CLI:
+
+		az acr create -g <RESOURCE GROUP> -n <ACR NAME> --sku Basic --admin-enabled
+
+As we have enabled the admin feature, we will be able to login remotely by using some credentials. The user name to access de ACR will be the ACR NAME and we can get the password from Azure at the following feature:
+
+![containers12](./img/containers12.png)	
+
+13. Now, lets login to this registry using our cmd prompt. The following command will help:
+
+		docker login <ACR NAME>.azurecr.io
+
+14. Now that we are logged in, we can push our image by tagging it with the correct format and doing a push.
+
+		docker tag <IMAGE NAME>:<IMAGE TAG> <ACR NAME>.azurecr.io/samples/myimage
+
+		docker push <ACR NAME>.azurecr.io/<IMAGE NAME>
+		
+		docker run -it --rm -p 83:80 <ACR 
+		NAME>.azurecr.io/<IMAGE NAME>
+
+15. **Congratulations!! You have succesfully created, uploaded and run a dockerized application.**
+
+## Bonus
+
+Now that we know how to upload an image to ACR, lets to the same but using Docker Hub instead. Now, Docker Hub allows you to create a registry that can be any, public or private depending on your needs. Please, go to https://hub.docker.com/ and log-in using the credentials you provided when setting up you docker desktop app.
+
+Use de following commands to upload it to your registry:
+
+	docker push <DOCKER HUB USER NAME>/<DOCKER HUB REPOSITORY>:<DOCKER HUB TAG>
+
+	docker tag <IMAGE NAME>:<IMAGE TAG> <DOCKER HUB USER NAME>/<DOCKER HUB REPOSITORY>
+
+	docker push <DOCKER HUB USER NAME>/<DOCKER HUB REPOSITORY>
 
 
 		
