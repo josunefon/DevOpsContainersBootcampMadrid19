@@ -2,6 +2,11 @@
 
 The context of this section would be, we already have a .net core application that works both locally and in Azure and we want to containerize it. For it:
 
+## Requirements
+You will need to run a **git clone** of the .Net Core application that we're using for the labs: 
+
+	git clone https://github.com/azure-samples/dotnetcore-sqldb-tutorial
+
 ## Steps to follow
 
 1. The first step to perform is to create a file without an extension that has the name Dockerfile. This file must be at the root of our project.
