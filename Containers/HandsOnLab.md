@@ -3,7 +3,7 @@
 The context of this section would be, we already have a .net core application that works both locally and in Azure and we want to containerize it. For it:
 
 ## Requirements
-You will need to run a **git clone** of the .Net Core application that we're using for the labs: 
+You will need to run a **git clone** of the .Net Core application we're using for the labs: 
 
 	git clone https://github.com/azure-samples/dotnetcore-sqldb-tutorial
 
